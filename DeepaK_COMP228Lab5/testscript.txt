@@ -1,0 +1,88 @@
+            // Create a new game and player object based on user input
+            String gameTitle = null;
+            Game newGame = new Game(gameTitle);
+
+            String firstName = null;
+            String lastName = null;
+            String address = null;
+            String postalCode = null;
+            String province = null;
+            String phoneNumber = null;
+            Player newPlayer = new Player(firstName, lastName, address, postalCode, province, phoneNumber);
+
+            // Prepare the SQL statement for inserting game and player data
+            String gameInsertSql = "INSERT INTO Game (game_title) VALUES (?)";
+            String playerInsertSql = "INSERT INTO Player (first_name, last_name, address, postal_code, province, Phone_Number) VALUES (?, ?, ?, ?, ?, ?)";
+            PreparedStatement gameStmt = connection.prepareStatement(gameInsertSql, Statement.RETURN_GENERATED_KEYS);
+            PreparedStatement playerStmt = connection.prepareStatement(playerInsertSql, Statement.RETURN_GENERATED_KEYS);
+
+            // Set the parameters for the prepared statements
+            gameStmt.setString(1, newGame.getTitle());
+            playerStmt.setString(1, newPlayer.getFirstName());
+            playerStmt.setString(2, newPlayer.getLastName());
+            playerStmt.setString(3, newPlayer.getCity());
+            playerStmt.setString(4, newPlayer.getPhoneNumber());
+
+            // Execute the SQL statements and retrieve the generated keys
+            int gameRows = gameStmt.executeUpdate();
+            ResultSet gameKeys = gameStmt.getGeneratedKeys();
+            int playerRows = playerStmt.executeUpdate();
+            ResultSet playerKeys = playerStmt.getGeneratedKeys();
+
+            // Use the generated keys to create a new PlayerAndGame object and insert it into the database
+            if (gameKeys.next() && playerKeys.next()) {
+                int gameId = gameKeys.getInt(1);
+                int playerId = playerKeys.getInt(1);
+                DATE playingDate = null;
+                Double score = null;
+                PlayerAndGame newPlayerAndGame = new PlayerAndGame(gameId, playerId, playingDate, score);
+                // Insert the newPlayerAndGame object into the database using another prepared statement
+            }
+
+            // Prepare the SQL statement for updating player data
+            String playerUpdateSql = "UPDATE Player SET first_name = ?, last_name = ?, address = ?, postal_code = ?, province = ?, Phone_Number = ? WHERE player_id = ?";
+            PreparedStatement newPlayerStmt = connection.prepareStatement(playerUpdateSql);
+
+            // Set the parameters for the prepared statement
+            String newFirstName = null;
+            String newLastName = null;
+            String newAddress = null;
+            String newPhoneNumber = null;
+            Integer playerId = null;
+            newPlayerStmt.setString(1, newFirstName);
+            newPlayerStmt.setString(2, newLastName);
+            newPlayerStmt.setString(3, newAddress);
+            newPlayerStmt.setString(4, newPhoneNumber);
+            newPlayerStmt.setInt(5, playerId);
+
+            // Execute the SQL statement
+            int newPlayerrows = newPlayerStmt.executeUpdate();
+
+
+            // Prepare the SQL statement for retrieving player and played game data
+           String playerAndGameSql = "SELECT Game.game_title, PlayerAndGame.playing_date, PlayerAndGame.score FROM PlayerAndGame INNER JOIN Game ON PlayerAndGame.game_id = Game.game_id WHERE PlayerAndGame.player_id = ?";
+            PreparedStatement playerAndGameStmt = connection.prepareStatement(playerAndGameSql);
+
+            // Set the parameter for the prepared statement
+            playerAndGameStmt.setInt(1, playerId);
+
+            // Execute the SQL statement and retrieve the results
+            ResultSet playerAndGameResults = playerAndGameStmt.executeQuery();
+
+            // Create a JTable to display the results
+            String[] columnNames = {"Game Title", "Playing Date", "Score"};
+            DefaultTableModel model = new DefaultTableModel(columnNames, 0);
+            while (playerAndGameResults.next()) {
+                String gameTitle = playerAndGameResults.getString("game_title");
+                String playingDate = playerAndGameResults.getString("playing_date");
+                int score = playerAndGameResults.getInt("score");
+                Object[] rowData = {gameTitle, playingDate, score};
+                model.addRow(rowData);
+            }
+            JTable table = new JTable(model);
+
+            // Add the table to the GUI interface and display it to the user
+            JScrollPane scrollPane = new JScrollPane(table);
+            panel.add(scrollPane);
+            frame.pack();
+            frame.setVisible(true);
